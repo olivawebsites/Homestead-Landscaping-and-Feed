@@ -7,45 +7,41 @@ function initNavbar() {
   const navbar = document.getElementById('navbar');
   if (!navbar) return;
 
-  const onScroll = () => {
-    navbar.classList.toggle('scrolled', window.scrollY > 60);
+  const update = () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 50);
   };
 
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
+  window.addEventListener('scroll', update, { passive: true });
+  update();
 }
 
 /* ---------- MOBILE MENU ---------- */
 function initMobileMenu() {
-  const toggle     = document.getElementById('nav-toggle');
-  const mobileMenu = document.getElementById('mobile-menu');
-  if (!toggle || !mobileMenu) return;
+  const toggle = document.getElementById('nav-toggle');
+  const menu   = document.getElementById('mobile-menu');
+  if (!toggle || !menu) return;
+
+  const close = () => {
+    toggle.classList.remove('open');
+    menu.classList.remove('open');
+    toggle.setAttribute('aria-expanded', 'false');
+    menu.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  };
 
   toggle.addEventListener('click', () => {
     const isOpen = toggle.classList.toggle('open');
-    mobileMenu.classList.toggle('open', isOpen);
-    toggle.setAttribute('aria-expanded', isOpen);
-    mobileMenu.setAttribute('aria-hidden', !isOpen);
+    menu.classList.toggle('open', isOpen);
+    toggle.setAttribute('aria-expanded', String(isOpen));
+    menu.setAttribute('aria-hidden', String(!isOpen));
     document.body.style.overflow = isOpen ? 'hidden' : '';
   });
 
-  mobileMenu.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', () => {
-      toggle.classList.remove('open');
-      mobileMenu.classList.remove('open');
-      toggle.setAttribute('aria-expanded', 'false');
-      mobileMenu.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
-    });
-  });
+  menu.querySelectorAll('a').forEach(link => link.addEventListener('click', close));
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && mobileMenu.classList.contains('open')) {
-      toggle.classList.remove('open');
-      mobileMenu.classList.remove('open');
-      toggle.setAttribute('aria-expanded', 'false');
-      mobileMenu.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
+    if (e.key === 'Escape' && menu.classList.contains('open')) {
+      close();
       toggle.focus();
     }
   });
@@ -53,10 +49,10 @@ function initMobileMenu() {
 
 /* ---------- SCROLL ANIMATIONS ---------- */
 function initScrollAnimations() {
-  const targets = document.querySelectorAll('.fade-up, .fade-in');
+  const els = document.querySelectorAll('.fade-up, .fade-in');
 
   if (!('IntersectionObserver' in window)) {
-    targets.forEach(el => el.classList.add('visible'));
+    els.forEach(el => el.classList.add('visible'));
     return;
   }
 
@@ -69,19 +65,19 @@ function initScrollAnimations() {
         }
       });
     },
-    { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    { threshold: 0.1, rootMargin: '0px 0px -36px 0px' }
   );
 
-  targets.forEach(el => observer.observe(el));
+  els.forEach(el => observer.observe(el));
 }
 
 /* ---------- SMOOTH SCROLL ---------- */
 function initSmoothScroll() {
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', (e) => {
-      const href = anchor.getAttribute('href');
-      if (href === '#') return;
-      const target = document.querySelector(href);
+      const id = anchor.getAttribute('href');
+      if (id === '#') return;
+      const target = document.querySelector(id);
       if (!target) return;
       e.preventDefault();
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -89,23 +85,23 @@ function initSmoothScroll() {
   });
 }
 
-/* ---------- ACTIVE NAV LINK ---------- */
+/* ---------- ACTIVE NAV HIGHLIGHT ---------- */
 function initActiveNav() {
   const sections = document.querySelectorAll('section[id]');
-  const navLinks  = document.querySelectorAll('.nav-links a[href^="#"]');
-  if (!sections.length || !navLinks.length) return;
+  const links    = document.querySelectorAll('.nav-links a[href^="#"]');
+  if (!sections.length || !links.length) return;
 
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          navLinks.forEach(link => link.classList.remove('active'));
+          links.forEach(l => l.classList.remove('active'));
           const active = document.querySelector(`.nav-links a[href="#${entry.target.id}"]`);
           if (active) active.classList.add('active');
         }
       });
     },
-    { threshold: 0.35 }
+    { threshold: 0.3 }
   );
 
   sections.forEach(s => observer.observe(s));
@@ -113,56 +109,54 @@ function initActiveNav() {
 
 /* ---------- ESTIMATE FORM ----------
    To activate:
-   1. Go to https://formspree.io → create a free form
-   2. Copy your form ID
-   3. Replace YOUR_FORM_ID in index.html with your actual ID
-   ---------------------------------------- */
+   1. Go to https://formspree.io and create a free account
+   2. Create a new form using your business email
+   3. Copy the form ID (e.g. xabcdefg)
+   4. In index.html, replace YOUR_FORM_ID in the <form action> attribute
+      Example: action="https://formspree.io/f/xabcdefg"
+   ---------------------------------------------------------------- */
 function initEstimateForm() {
   const form    = document.getElementById('estimate-form');
   const success = document.getElementById('form-success');
-  const submit  = document.getElementById('form-submit');
+  const btn     = document.getElementById('form-submit');
   if (!form) return;
 
-  /* Show success message if redirected back after submission */
+  /* Show success state if Formspree redirected back with ?submitted=true */
   if (window.location.search.includes('submitted=true') && success) {
-    success.style.display = 'block';
     form.style.display    = 'none';
+    success.style.display = 'flex';
 
-    const estimateSection = document.getElementById('estimate');
-    if (estimateSection) {
-      setTimeout(() => {
-        estimateSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 400);
+    const section = document.getElementById('estimate');
+    if (section) {
+      setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
     }
   }
 
   /* Client-side validation */
   form.addEventListener('submit', (e) => {
-    const requiredFields = form.querySelectorAll('[required]');
-    let allValid = true;
+    const required = form.querySelectorAll('[required]');
+    let valid = true;
 
-    requiredFields.forEach(field => {
+    required.forEach(field => {
       field.style.borderColor = '';
       if (!field.value.trim()) {
-        allValid = false;
-        field.style.borderColor = 'rgba(200,50,50,0.6)';
-        field.addEventListener('input', () => {
-          field.style.borderColor = '';
-        }, { once: true });
+        valid = false;
+        field.style.borderColor = '#c0392b';
+        field.addEventListener('input', () => { field.style.borderColor = ''; }, { once: true });
       }
     });
 
-    if (!allValid) {
+    if (!valid) {
       e.preventDefault();
-      const firstEmpty = Array.from(requiredFields).find(f => !f.value.trim());
-      if (firstEmpty) firstEmpty.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const first = Array.from(required).find(f => !f.value.trim());
+      if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
-    if (submit) {
-      submit.textContent         = 'Sending...';
-      submit.style.opacity       = '0.6';
-      submit.style.pointerEvents = 'none';
+    if (btn) {
+      btn.textContent         = 'Sending\u2026';
+      btn.style.opacity       = '0.65';
+      btn.style.pointerEvents = 'none';
     }
   });
 }
@@ -174,11 +168,11 @@ function initFloatCall() {
 
   const style = document.createElement('style');
   style.textContent = `
-    @keyframes float-pulse {
-      0%,100% { box-shadow: 0 6px 24px rgba(45,110,53,0.45); }
-      50%      { box-shadow: 0 6px 36px rgba(45,110,53,0.70); }
+    @keyframes callPulse {
+      0%, 100% { box-shadow: 0 4px 20px rgba(27,74,34,0.5); }
+      50%       { box-shadow: 0 4px 32px rgba(27,74,34,0.72); }
     }
-    .float-call { animation: float-pulse 2.4s ease infinite; }
+    .float-call { animation: callPulse 2.8s ease infinite; }
     .float-call:hover { animation: none; }
   `;
   document.head.appendChild(style);
@@ -192,11 +186,13 @@ function initFooterYear() {
 
 /* ---------- HERO PARALLAX ---------- */
 function initParallax() {
-  const heroBg = document.querySelector('.hero-bg');
-  if (!heroBg) return;
+  const bg = document.querySelector('.hero-bg');
+  if (!bg) return;
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   window.addEventListener('scroll', () => {
-    heroBg.style.transform = `translateY(${window.scrollY * 0.25}px)`;
+    bg.style.transform = `translateY(${window.scrollY * 0.22}px)`;
   }, { passive: true });
 }
 
